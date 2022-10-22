@@ -1,19 +1,35 @@
-from flask import Flask, render_template, request, redirect, url_for
+import os
+
+from flask import Flask, render_template, request, redirect, url_for, jsonify
+# from sqlalchemy.future import engine
+# from sqlalchemy.orm import scoped_session, sessionmaker
 
 from base import Arena
 from classes import unit_classes
+from db import db
 from equipment import Equipment
 
 from unit import BaseUnit, PlayerUnit, EnemyUnit
 
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_NAME = os.getenv('DB_NAME')
+
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@db/{DB_NAME}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+
+# Session = scoped_session(sessionmaker(bind=engine))
+# session = Session()
 
 heroes = {
     "player": BaseUnit,
     "enemy": BaseUnit
 }
 
-arena = Arena()  
+arena = Arena()
 
 
 @app.route("/")
@@ -138,6 +154,19 @@ def choose_enemy():
         enemy.equip_weapon(equipment.get_weapon(weapon_name))
         heroes['enemy'] = enemy
         return redirect(url_for('start_fight'))
+
+
+@app.route("/test_db")
+def test_db():
+    result = db.session.execute(
+        'SELECT 1'
+    ).scalar()
+
+    return jsonify(
+        {
+            'result': result
+        }
+    )
 
 
 if __name__ == "__main__":
